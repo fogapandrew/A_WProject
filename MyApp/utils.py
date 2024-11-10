@@ -41,7 +41,7 @@ def random_boooks():
          
     """
     
-    global  dictionary_of_all_images
+    global  STEPHEN_KING_IMAGES
     
     book_number = random.randint(1, 20)
 
@@ -53,7 +53,7 @@ def random_boooks():
 
     books = json.loads(data)
 
-    for booktittle , bookimage in dictionary_of_all_images.items():
+    for booktittle , bookimage in STEPHEN_KING_IMAGES.items():
         if booktittle == books['data']["Title"] :
             bookImage = bookimage
             
