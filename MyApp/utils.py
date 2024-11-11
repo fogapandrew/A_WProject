@@ -2,6 +2,7 @@ import requests
 import json
 from PIL import Image
 import random
+from bs4 import BeautifulSoup
 from io import BytesIO
 
 STEPHEN_KING_IMAGES = { 
@@ -27,6 +28,13 @@ STEPHEN_KING_IMAGES = {
     "The Dark Tower II: The Drawing of the Three" : "https://m.media-amazon.com/images/I/91PHYFSBgfL.jpg"
 }
 
+HTML_DC = "https://www.readanybook.online/"
+RESPONSE = requests.get(HTML_DC , 'html.parser')
+SOUP = BeautifulSoup(RESPONSE.text)
+
+
+
+
 def random_boooks():
     """ This methods generates random books from stephen-king API.
     
@@ -42,24 +50,66 @@ def random_boooks():
     """
     
     global  STEPHEN_KING_IMAGES
-    
     book_number = random.randint(1, 20)
-
     size = (200, 300)
-   
     response = requests.get("https://stephen-king-api.onrender.com/api/book/{}".format(book_number))
-
     data = response.text 
-
     books = json.loads(data)
-
     for booktittle , bookimage in STEPHEN_KING_IMAGES.items():
         if booktittle == books['data']["Title"] :
             bookImage = bookimage
             
     image = Image.open(requests.get(bookImage, stream=True).raw)
-
     image_resized = image.resize(size)
-    
-    
     return books['data']["Title"] , books['data']["created_at"], books['data']["Publisher"] , books['data']["ISBN"] , image_resized
+
+
+def get_image_title():
+    """ This methods returns a dictionary containing image and title.
+    Parameters:
+            NONE
+    Returns:
+    title_image_data (dictionary) : key -> image and value -> string
+    """
+    global  SOUP
+    book_entries = SOUP.find_all('a', class_='link')
+    title_image_data = { }
+    for entry in book_entries:
+        title = entry.get('title')  
+        img_tag = entry.find('img')  
+        img_src = img_tag.get('data-src') if img_tag else None  
+        title_image_data[img_src] = title
+    return title_image_data
+
+def get_authors():
+    """ This methods returns a list of authors 
+    Parameters:
+            NONE
+    Returns:
+    all_authors (string) : string of list of authors 
+    """
+    global  SOUP
+    author_entries = SOUP.find_all('span', class_='list')
+    all_authors = []
+    for author_data in author_entries:
+        author_tag = author_data.find('a')
+        author = author_tag.get('title')
+        author.split(' ', 1)
+        all_authors.append(author.split(' ', 1)[1])
+    return all_authors
+
+def get_book_ratings():
+    """ This methods returns a list of ratings 
+    Parameters:
+            NONE
+    Returns:
+    all_ratings (numbers) : intergers of list of ratings 
+    """
+    global  SOUP
+    all_ratings = []
+    book_ratings = SOUP.find_all('div', class_='preview-rate')
+    for b_ratings in book_ratings:
+        ratings = b_ratings.find('b')
+        book_rating = ratings.text
+        all_ratings.append(book_rating)
+    return all_ratings
