@@ -172,3 +172,42 @@ def add_data_to_database():
     CONN.commit()
 
     CONN.close()
+
+
+def get_random_books():
+    """ This methods selects random books from database 
+    Parameters:
+            NONE
+    Returns:
+           a dictionary containing elements image_url , title, authors and ratings.
+    """
+    # Generate a random index number between 1 and 14 (or adjust as needed)
+
+    index_number = random.randint(1, 14)
+    
+    # Query the database and fetch data
+    try:
+        CURSOR.execute("SELECT image_url, title, authors, ratings FROM book_data WHERE id = ?", (index_number,))
+        result = CURSOR.fetchone()  
+
+        if result:
+            image_url, title, authors, ratings = result
+            # Return the result as a dictionary
+            return {
+                "image_url": image_url,
+                "title": title,
+                "authors": authors,
+                "ratings": ratings
+            }
+        else:
+            # If no record found, return None
+            return None
+
+    except sqlite3.Error as e:
+        # In case of an error, return an error message dictionary
+        return {"error": f"Database error: {e}"}
+
+    finally:
+        # Ensure the connection is closed
+        CONN.close()
+
