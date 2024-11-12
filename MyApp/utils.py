@@ -4,6 +4,7 @@ from PIL import Image
 import random
 from bs4 import BeautifulSoup
 from io import BytesIO
+import sqlite3
 
 STEPHEN_KING_IMAGES = { 
     "Carrie" : "https://m.media-amazon.com/images/I/51l0k7AjWwL._AC_UF894,1000_QL80_.jpg",
@@ -31,6 +32,9 @@ STEPHEN_KING_IMAGES = {
 HTML_DC = "https://www.readanybook.online/"
 RESPONSE = requests.get(HTML_DC , 'html.parser')
 SOUP = BeautifulSoup(RESPONSE.text)
+CONN = sqlite3.connect('my_database.db')
+
+CURSOR = CONN.cursor()
 
 
 
@@ -81,6 +85,8 @@ def get_image_title():
         title_image_data[img_src] = title
     return title_image_data
 
+
+
 def get_authors():
     """ This methods returns a list of authors 
     Parameters:
@@ -98,6 +104,7 @@ def get_authors():
         all_authors.append(author.split(' ', 1)[1])
     return all_authors
 
+
 def get_book_ratings():
     """ This methods returns a list of ratings 
     Parameters:
@@ -113,3 +120,55 @@ def get_book_ratings():
         book_rating = ratings.text
         all_ratings.append(book_rating)
     return all_ratings
+
+
+
+def add_data_to_database():
+    """ This methods creates a database and injest it with data from our scraper 
+    Parameters:
+            NONE
+    Returns:
+            NONE
+    """
+    book_images = [] 
+    book_titles = []
+    image_title_dic = get_image_title()
+    global CONN
+    global CURSOR
+
+    for x , y in image_title_dic.items():
+        book_images.append(x)
+        book_titles.append(y)
+
+    book_authors = get_authors()
+
+    book_ratings = get_book_ratings()
+
+    min_len = min(len(book_images), len(book_titles), len(book_authors), len(book_ratings))
+
+    book_images = book_images[:min_len]
+    book_titles = book_titles[:min_len]
+    book_authors = book_authors[:min_len]
+    book_ratings = book_ratings[:min_len]
+
+
+
+    CURSOR.execute('''
+    CREATE TABLE IF NOT EXISTS book_data (
+        id INTEGER PRIMARY KEY,
+        image_url TEXT,
+        title TEXT,
+        authors TEXT,
+        ratings REAL
+        )
+    ''')
+
+
+    data_to_insert = list(zip(book_images, book_titles, book_authors, book_ratings))
+
+
+    CURSOR.executemany("INSERT INTO book_data (image_url, title, authors, ratings) VALUES (?, ?, ?, ?)", data_to_insert)
+
+    CONN.commit()
+
+    CONN.close()
